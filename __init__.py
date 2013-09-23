@@ -17,11 +17,11 @@ Source svg file provided for customing.
 __all__ = ('Gauge',)
 
 __title__ = 'garden.gauge'
-__version__ = '0.1'
+__version__ = '0.2'
 __author__ = 'julien@hautefeuille.eu'
 
 import kivy
-kivy.require('1.7.1')
+kivy.require('1.6.0')
 from kivy.config import Config
 from kivy.app import App
 from kivy.clock import Clock
@@ -34,6 +34,9 @@ from kivy.uix.scatter import Scatter
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.progressbar import ProgressBar
+import os,inspect
+
+class DummyClass: pass
 
 class Gauge(Widget):
     '''
@@ -41,15 +44,18 @@ class Gauge(Widget):
 
     '''
 
+    dummy = DummyClass
     unit = NumericProperty(1.8)
     value = BoundedNumericProperty(0, min=0, max=100, errorvalue=0)
-    file_gauge = StringProperty("cadran.png")
-    file_needle = StringProperty("needle.png")
+    mypath = os.path.dirname(os.path.abspath(inspect.getsourcefile(dummy)))
+    file_gauge = StringProperty(mypath + os.sep + "cadran.png")
+    file_needle = StringProperty(mypath + os.sep + "needle.png")
     size_gauge = BoundedNumericProperty(128, min=128, max=256, errorvalue=128)
     size_text = NumericProperty(10)
 
     def __init__(self, **kwargs):
         super(Gauge, self).__init__(**kwargs)
+        
             
         self._gauge = Scatter(
             size=(self.size_gauge, self.size_gauge),
@@ -112,38 +118,49 @@ class Gauge(Widget):
         self._progress.value = self.value
 
 
+dirflag = 1
+value = 50
+
 class GaugeApp(App):
         def build(self):
-            from kivy.uix.slider import Slider
+			from kivy.clock import Clock
+			from functools import partial
+			from kivy.uix.slider import Slider
 
-            def test(*ars):
-                gauge.value = s.value
-              
-                print(s.value)
 
-            def test_(*ars):
-          
-                gauge_.value = s1.value
-                print(s.value)
-            
-            
-            box = BoxLayout(orientation='vertical', spacing=10, padding=10)
-            gauge = Gauge(value=50, size_gauge=256, size_text=9)
-            gauge_ = Gauge(value=50, size_gauge=256, size_text=19)
-    
-            box.add_widget(gauge)
-            box.add_widget(gauge_)
-            
-            s = Slider(min=0, max=100, value=50)
-            s.bind(value=test)
-            box.add_widget(s)
+			def setgauge(sender, value):
+				mygauge.value = value
+				
+			def incgauge(sender, incr):
+				global dirflag
+				global value
+				
+				
+				if dirflag == 1:
+					if value <100:
+						value += incr
+						setgauge(0,value)
+						sl.value = value 
+					else:
+						dirflag = 0
+				else:
+					if value >0:
+						value -= incr
+						setgauge(sender, value)
+						sl.value = value
+						
+					else:
+						dirflag = 1
+			
+			mygauge = Gauge(value=50, size_gauge=256, size_text=25)
+			box = BoxLayout(orientation='horizontal', spacing=5, padding=5)
+			sl = Slider(orientation='vertical')
+			sl.bind(value = setgauge)
+			Clock.schedule_interval(partial(incgauge, incr = 1), 0.03)
+			box.add_widget(mygauge)
+			box.add_widget(sl)
 
-            s1 = Slider(min=0, max=100, value=50)
-            s1.bind(value=test_)
-            box.add_widget(s1)
- 
-            
-            return box
+			return box
             
 if __name__ == '__main__':
     GaugeApp().run()
