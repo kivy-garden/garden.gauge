@@ -122,45 +122,45 @@ dirflag = 1
 value = 50
 
 class GaugeApp(App):
-        def build(self):
-			from kivy.clock import Clock
-			from functools import partial
-			from kivy.uix.slider import Slider
+    def build(self):
+        from kivy.clock import Clock
+        from functools import partial
+        from kivy.uix.slider import Slider
 
 
-			def setgauge(sender, value):
-				mygauge.value = value
-				
-			def incgauge(sender, incr):
-				global dirflag
-				global value
-				
-				
-				if dirflag == 1:
-					if value <100:
-						value += incr
-						setgauge(0,value)
-						sl.value = value 
-					else:
-						dirflag = 0
-				else:
-					if value >0:
-						value -= incr
-						setgauge(sender, value)
-						sl.value = value
-						
-					else:
-						dirflag = 1
-			
-			mygauge = Gauge(value=50, size_gauge=256, size_text=25)
-			box = BoxLayout(orientation='horizontal', spacing=5, padding=5)
-			sl = Slider(orientation='vertical')
-			sl.bind(value = setgauge)
-			Clock.schedule_interval(partial(incgauge, incr = 1), 0.03)
-			box.add_widget(mygauge)
-			box.add_widget(sl)
-
-			return box
+        def setgauge(sender, value):
+            mygauge.value = value
             
+        def incgauge(sender, incr):
+            global dirflag
+            global value
+
+
+            if dirflag == 1:
+                if value <100:
+                    value += incr
+                    setgauge(0,value)
+                    sl.value = value
+                else:
+                    dirflag = 0
+            else:
+                if value >0:
+                    value -= incr
+                    setgauge(sender, value)
+                    sl.value = value
+
+                else:
+                    dirflag = 1
+
+        mygauge = Gauge(value=50, size_gauge=256, size_text=25)
+        box = BoxLayout(orientation='horizontal', spacing=5, padding=5)
+        sl = Slider(orientation='vertical')
+        sl.bind(value = setgauge)
+        Clock.schedule_interval(partial(incgauge, incr = 1), 0.03)
+        box.add_widget(mygauge)
+        box.add_widget(sl)
+
+        return box
+
 if __name__ == '__main__':
     GaugeApp().run()
