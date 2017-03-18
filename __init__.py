@@ -6,7 +6,7 @@
 Gauge
 =====
 
-The :class:`Gauge` widget is a widget for displaying gauge. 
+The :class:`Gauge` widget is a widget for displaying gauge.
 
 .. note::
 
@@ -34,9 +34,8 @@ from kivy.uix.scatter import Scatter
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.progressbar import ProgressBar
-import os,inspect
+from os.path import join, dirname, abspath
 
-class DummyClass: pass
 
 class Gauge(Widget):
     '''
@@ -44,45 +43,47 @@ class Gauge(Widget):
 
     '''
 
-    dummy = DummyClass
     unit = NumericProperty(1.8)
     value = BoundedNumericProperty(0, min=0, max=100, errorvalue=0)
-    mypath = os.path.dirname(os.path.abspath(inspect.getsourcefile(dummy)))
-    file_gauge = StringProperty(mypath + os.sep + "cadran.png")
-    file_needle = StringProperty(mypath + os.sep + "needle.png")
+    path = dirname(abspath(__file__))
+    file_gauge = StringProperty(join(path, "cadran.png"))
+    file_needle = StringProperty(join(path, "needle.png"))
     size_gauge = BoundedNumericProperty(128, min=128, max=256, errorvalue=128)
     size_text = NumericProperty(10)
 
     def __init__(self, **kwargs):
         super(Gauge, self).__init__(**kwargs)
-        
-            
+
         self._gauge = Scatter(
             size=(self.size_gauge, self.size_gauge),
-            do_rotate=False, 
+            do_rotation=False,
             do_scale=False,
             do_translation=False
-            )
+        )
 
-        _img_gauge = Image(source=self.file_gauge, size=(self.size_gauge, 
-            self.size_gauge))
+        _img_gauge = Image(
+            source=self.file_gauge,
+            size=(self.size_gauge, self.size_gauge)
+        )
 
         self._needle = Scatter(
             size=(self.size_gauge, self.size_gauge),
-            do_rotate=False,
+            do_rotation=False,
             do_scale=False,
             do_translation=False
-            )
+        )
 
-        _img_needle = Image(source=self.file_needle, size=(self.size_gauge, 
-            self.size_gauge))
+        _img_needle = Image(
+            source=self.file_needle,
+            size=(self.size_gauge, self.size_gauge)
+        )
 
         self._glab = Label(font_size=self.size_text, markup=True)
         self._progress = ProgressBar(max=100, height=20, value=self.value)
-       
+
         self._gauge.add_widget(_img_gauge)
         self._needle.add_widget(_img_needle)
-        
+
         self.add_widget(self._gauge)
         self.add_widget(self._needle)
         self.add_widget(self._glab)
@@ -91,7 +92,7 @@ class Gauge(Widget):
         self.bind(pos=self._update)
         self.bind(size=self._update)
         self.bind(value=self._turn)
-        
+
     def _update(self, *args):
         '''
         Update gauge and needle positions after sizing or positioning.
@@ -101,7 +102,7 @@ class Gauge(Widget):
         self._needle.pos = (self.x, self.y)
         self._needle.center = self._gauge.center
         self._glab.center_x = self._gauge.center_x
-        self._glab.center_y = self._gauge.center_y + (self.size_gauge/4)
+        self._glab.center_y = self._gauge.center_y + (self.size_gauge / 4)
         self._progress.x = self._gauge.x
         self._progress.y = self._gauge.y + (self.size_gauge / 4)
         self._progress.width = self.size_gauge
@@ -118,49 +119,37 @@ class Gauge(Widget):
         self._progress.value = self.value
 
 
-dirflag = 1
-value = 50
-
-class GaugeApp(App):
-        def build(self):
-			from kivy.clock import Clock
-			from functools import partial
-			from kivy.uix.slider import Slider
-
-
-			def setgauge(sender, value):
-				mygauge.value = value
-				
-			def incgauge(sender, incr):
-				global dirflag
-				global value
-				
-				
-				if dirflag == 1:
-					if value <100:
-						value += incr
-						setgauge(0,value)
-						sl.value = value 
-					else:
-						dirflag = 0
-				else:
-					if value >0:
-						value -= incr
-						setgauge(sender, value)
-						sl.value = value
-						
-					else:
-						dirflag = 1
-			
-			mygauge = Gauge(value=50, size_gauge=256, size_text=25)
-			box = BoxLayout(orientation='horizontal', spacing=5, padding=5)
-			sl = Slider(orientation='vertical')
-			sl.bind(value = setgauge)
-			Clock.schedule_interval(partial(incgauge, incr = 1), 0.03)
-			box.add_widget(mygauge)
-			box.add_widget(sl)
-
-			return box
-            
 if __name__ == '__main__':
+    from kivy.uix.slider import Slider
+
+    class GaugeApp(App):
+        increasing = NumericProperty(1)
+        begin = NumericProperty(50)
+        step = NumericProperty(1)
+
+        def build(self):
+            box = BoxLayout(orientation='horizontal', padding=5)
+            self.gauge = Gauge(value=50, size_gauge=256, size_text=25)
+            self.slider = Slider(orientation='vertical')
+
+            stepper = Slider(min=1, max=25)
+            stepper.bind(
+                value=lambda instance, value: setattr(self, 'step', value)
+            )
+
+            box.add_widget(self.gauge)
+            box.add_widget(stepper)
+            box.add_widget(self.slider)
+            Clock.schedule_interval(lambda *t: self.gauge_increment(), 0.03)
+            return box
+
+        def gauge_increment(self):
+            begin = self.begin
+            begin += self.step * self.increasing
+            if begin > 0 and begin < 100:
+                self.gauge.value = self.slider.value = begin
+            else:
+                self.increasing *= -1
+            self.begin = begin
+
     GaugeApp().run()
